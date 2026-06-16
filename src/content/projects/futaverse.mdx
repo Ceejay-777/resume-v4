@@ -1,0 +1,138 @@
+After a conversation with my academic mentor about projects that could benefit our school, my friend and I decided to build FutaVerse. 
+
+## What is FutaVerse?
+
+FutaVerse is a campus platform built for students and alumni of the Federal University of Technology, Akure. The idea is simple: give everyone on campus, whether you are a student looking for an internship, an alumnus willing to mentor, or a lecturer organizing an event, one place to do all of that instead of the usual mess of WhatsApp groups and scattered links.
+
+The MVP currently covers role based access and onboarding, internship listings and applications, mentorship connections, event creation with a full ticketing system, payments, bookmarks, a reviews system, and a basic social feed. More is on the way.
+
+It is not public yet. Just myself on the backend and one other person on the frontend. The goal is to present it to school administration and see if it gets adopted. So the stakes feel real.
+
+## How it started
+
+I am a final year Computer Engineering student, which means this project was being built in whatever time was left after lectures, assignments, and a capstone thesis. Development has been slow for that reason. But slow does not mean careless.
+
+The honest description of this project is one long continuous learning experience. I knew Django and DRF coming in, but I had never dealt with background task queues at this scale, or OAuth 2, or real time communication, or atomic payment flows. I figured those things out as the need for them arrived, which is both the exciting and the terrifying way to build software.
+
+## The architecture
+
+The backend is a monolithic Django application, and that was a deliberate choice. For a two person team building toward an MVP, anything more distributed would have introduced more coordination overhead than it solved. A well structured monolith is easier to reason about, easier to debug, and easier to hand off.
+
+But monolith does not mean disorganized. I set up a modular Django app structure where each domain lives in its own app: internships, mentorships, events, the social feed, and so on. The goal was that expanding one area of the platform should not require you to understand all the other areas. That discipline has paid off.
+
+For real time updates, I am using Server Sent Events through Django Eventstream. The use case is mostly one directional, things like notifications and live feed updates, so SSE was a better fit than full WebSockets. It is lighter, simpler to manage, and does exactly what I needed.
+
+Background tasks, email delivery, scheduled reminders, notifications, are handled by Django Q2. More on how I landed there in a moment.
+
+## The part I am most proud of: events, tickets, and payments
+
+This was the hardest thing to build, and also the piece I feel best about.
+
+The basic flow sounds simple: a user creates an event, sets a ticket price, other users buy tickets, the money goes to the creator's linked bank account after the platform takes its cut. But there is a long gap between "simple" and "actually works every time."
+
+Every step of this flow had to be atomic. If a ticket purchase went through but the payment confirmation failed, or if the payment confirmed but the ticket was never recorded, you have a serious problem that breaks trust with real users. So I had to think carefully about transaction boundaries, about what happens when things fail halfway, and about how to make every operation safe to retry without producing duplicate results.
+
+The word for that last property is idempotency, and getting it right with a payment gateway adds another layer of complexity. When a payment gateway sends you a webhook to confirm a payment, that webhook can arrive more than once. Your system has to recognize a duplicate and ignore it rather than processing the same payment twice. Getting all of that right, the atomicity, the idempotency, the webhook handling, across multiple moving parts that all had to be in sync, was the most demanding technical work of the whole project.
+
+But watching it work end to end, a ticket gets created, a payment confirms, a remuneration gets queued into the creator's account, without any step breaking or duplicating, felt genuinely good.
+
+```python
+# payments/webhook_handlers.py
+
+def handle_charge_success(data):
+    reference = data.get("reference")
+
+    try:
+        with transaction.atomic():
+            ticket_purchase = (
+                TicketPurchase.objects
+                .select_for_update()
+                .select_related('ticket', 'ticket__event', 'ticket__event__creator')
+                .get(ticket_uid=reference)
+            )
+
+            # If the purchase is already paid, we return out early.
+            if ticket_purchase.is_paid:
+                logger.info(f"Purchase {reference} already processed. Skipping.")
+                return
+
+            ticket_purchase.is_paid = True
+            ticket_purchase.save()
+
+            ticket = ticket_purchase.ticket
+            event = ticket.event
+            event_service = EventService(event)
+
+            Ticket.objects.filter(id=ticket.id).update(quantity_sold=F('quantity_sold') + 1)
+
+        if event.mode in [Event.Mode.VIRTUAL, Event.Mode.HYBRID]:
+            event_service.sync_to_calendar()
+
+        event_service.send_ticket_email(ticket_purchase)
+
+    except TicketPurchase.DoesNotExist:
+        logger.error(f"Purchase not found for reference: {reference}")
+    except Exception as e:
+        logger.error(f"Error processing webhook for {reference}: {str(e)}")
+```
+
+## A plugin style architecture for posts and bookmarks
+
+Another thing I spent real time on was the social layer, specifically how posts, bookmarks, and reviews could each attach to different kinds of content without creating a mess of foreign keys everywhere.
+
+Django has a built in system called content types that lets you create generic relationships between models without hardcoding every possible combination. So instead of a bookmark model with separate fields for a bookmarked internship, a bookmarked event, and a bookmarked mentorship, you have one bookmark model that can point to any of them.
+
+But content types alone do not tell you what logic to run when you are working with a given piece of content. I built a small plugin style layer on top so that each content type registers its own handler. When a post is created or a bookmark is processed, the system looks up which handler to call based on what the content is. Adding a new bookmarkable content type in the future means registering a handler and nothing else. The core bookmark logic does not need to change.
+
+```python
+# posts/registry.py
+
+ENGAGEMENT_PLUGIN = {
+    InternshipEngagement:    _internship_engagement_plugin,
+    MentorshipEngagement:    _mentorship_engagement_plugin,
+}
+
+def get_engagement_plugin(key):
+    return ENGAGEMENT_PLUGIN.get(key)
+
+
+# posts/serializers.py
+
+class PostSerializer(serializers.ModelSerializer):
+    related_data = serializers.SerializerMethodField()
+
+    def get_related_data(self, obj):
+        related = obj.related_object
+        plugin = get_engagement_plugin(related.__class__)
+
+        if not plugin:
+            return None
+
+        return plugin["serializer"](related).data
+```
+
+This kind of design is easy to skip when you are moving fast. I am glad I did not skip it.
+
+## The Celery detour
+
+Early in the project I set up Celery for background tasks. It is the obvious choice if you have been reading about Django background jobs for any length of time. Mature, well documented, widely used.
+
+The problem was that Celery's default setup uses Redis as a message broker, and I was running Redis on a hosted plan with a credit limit. Celery is not subtle about how it uses Redis. The credits were going faster than I expected for an early stage project with almost no real users yet.
+
+I replaced Celery with Django Q2, which uses the database as its default broker. Simpler tool, lower overhead, and it saved my Redis credits for things that actually need them. Sometimes the industry standard choice is overkill and the quieter alternative is the right call. That was a useful thing to learn early.
+
+## What I would do differently
+
+Before I started writing code, I had a rough idea of what I was building. But rough turned out to be the problem. As new features got added, I sometimes had to backtrack and restructure things that could have been designed better from the start.
+
+The thing I would change is spending more time upfront mapping out the system architecture before writing any code. Not in an obsessive way, but enough to have a clear picture of how everything fits together. Then when a new feature comes in, the question is not "where do I put this" but "how does this fit into what we already have."
+
+That discipline is something I am still building.
+
+## Where it is going
+
+The internship and mentorship management features are the next big phase. The current implementation handles listings, applications, and offers. What comes next is the ongoing relationship: scheduled meeting sessions, resource rooms where mentors can drop materials for all their mentees, and live chat.
+
+The goal has not changed. If school administration adopts FutaVerse, it becomes the actual infrastructure for student career development at FUTA. That is a large thing to try to build as a final year student in your spare time.
+
+But it is moving forward.
