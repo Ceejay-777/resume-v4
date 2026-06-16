@@ -1,4 +1,4 @@
-import futaverse_img from "../assets/projects/futaverse_architecture.svg"
+import futaverse_img from "../assets/projects/futaverse_architecture.png";
 
 export type Project = {
   slug: string;
@@ -43,7 +43,10 @@ export const projects: Project[] = [
     achievement:
       "Designed and built the backend powering the MVP, including payments, ticketing, mentorships, internships, notifications, and role-based access control.",
 
-    links: { github: "#", live: "#" },
+    links: {
+      github: "https://github.com/futaverse/futaverse-backend",
+      live: "https://futaverse-backend-3.onrender.com",
+    },
     gallery: [],
     image: futaverse_img,
   },

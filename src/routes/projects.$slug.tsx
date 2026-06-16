@@ -73,6 +73,7 @@ function ProjectDetail() {
             {project.links?.live && (
               <a
                 href={project.links.live}
+                target="_blank"
                 className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-surface px-4 text-sm hover:border-foreground/30"
               >
                 <ExternalLink className="h-3.5 w-3.5" /> Live
@@ -81,6 +82,7 @@ function ProjectDetail() {
             {project.links?.github && (
               <a
                 href={project.links.github}
+                target="_blank"
                 className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-surface px-4 text-sm hover:border-foreground/30"
               >
                 <XCircle className="h-3.5 w-3.5" /> Source
@@ -89,14 +91,17 @@ function ProjectDetail() {
           </div>
         </header>
 
-        {/* <div className="mt-10 relative aspect-16/8  rounded-2xl border border-border bg-surface">
+        <div className="mt-10 relative aspect-16/8 overflow-hidden rounded-2xl border border-border bg-surface">
           <div className="absolute inset-0 grid-bg opacity-40" />
           <div className="absolute inset-0 bg-linear-to-tr from-(--brand)/20 via-transparent to-transparent" />
           {project.image ? (
             <div className="relative overflow-hidden rounded-2xl border border-border bg-surface object-contain">
               <img
                 src={project.image}
-                alt={project.title.toLowerCase().replace(/\s+/g, "-")  + " architecture"}
+                alt={
+                  project.title.toLowerCase().replace(/\s+/g, "-") +
+                  " architecture"
+                }
                 className="w-full"
               />
             </div>
@@ -106,7 +111,7 @@ function ProjectDetail() {
               .architecture.svg
             </div>
           )}
-        </div> */}
+        </div>
 
         <div className="mt-16 grid gap-12 lg:grid-cols-[260px_1fr]">
           <aside className="lg:sticky lg:top-24 lg:self-start space-y-6">
