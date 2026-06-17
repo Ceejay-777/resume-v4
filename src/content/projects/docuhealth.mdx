@@ -1,0 +1,71 @@
+Most people don't think about their medical records until they need them urgently and cannot find them. Mr. Abel (Docuhealth CoFounder) thought about this long enough that he decided to build something about it. That's how I ended up working on the most complex system I have built so far.
+
+## What is Docuhealth?
+
+Medical records in Nigeria are everywhere and nowhere at the same time. You visit one hospital, they have a file on you. You go to another, you are starting from scratch. The vision behind Docuhealth is to fix that, not just by digitizing records, but by making them travel with the patient through a unique Health Identification Number called the HIN.
+
+The Health Identification Number (HIN) is the foundation of the platform. Rather than identifying patients by whichever hospital they happen to visit, the HIN provides a consistent identity across the healthcare ecosystem. It is the thread that ties appointments, records, prescriptions, lab results, and future interactions together.
+
+The people who use this system span the whole healthcare chain. Patients, hospitals, doctors, nurses, receptionists, labs, radiology centers, pharmacies and so on. Each of them interacts with the platform differently, sees different things, and can do different things. Getting that right for all of them at the same time is what makes this one genuinely difficult to build.
+
+We have a working version running in a handful of hospitals with hundreds of patients using it, and we are still going.
+
+## How it started
+
+I joined in December 2024 as a backend developer and eventually became the lead engineer. But the more honest way to tell this story is to start with a mistake I made myself.
+
+I started the backend on Flask.
+
+I don't know exactly what I was thinking. Flask is fine for a lot of things, but for a system this complex, with this many user roles and this much domain logic to keep organized, it was the wrong call from day one. I spent months building on it and fighting with it in equal measure. Every new feature felt harder than it should. There was nothing in the framework pushing me toward any kind of structure, so everything I built had to carry the weight of its own organization, and I was not experienced enough yet to do that cleanly.
+
+Eventually I had to be honest with myself. I went to the team, told them what I wanted to do, asked for the time to do it, and migrated the whole thing to Django. Painful? Yes. Necessary? Absolutely.
+
+## The architecture
+
+Django monolith, split by domain: accounts, hospital operations, organizations, records, and a few others. PostgreSQL for the database, which was never really a debate given how relational everything here is. File storage sits on Supabase for now, with plans to move to our own containers on AWS in the coming months. Auth runs on JWTs with refresh tokens in cookies, and we are moving toward putting the access tokens in cookies too.
+
+Medical records are encrypted in transit and at rest, with strict role-based access controls governing access to patient information. Only authorized personnel can access a patient's full records. Even the patient themselves only sees a summary of their own data, as required for health records. The HIN is the key that unlocks everything. A receptionist uses it to book an appointment, the doctor uses it to access the records, and from there the doctor can order lab tests, prescriptions, vitals, scans, each of which gets routed to the right department to resolve.
+
+## The subaccount problem
+
+Parents can create subaccounts for their children so that kids have records from birth. When the child turns eighteen, the subaccount upgrades into a full account with its own login. Straightforward idea.
+
+My implementation of it was not straightforward at all.
+
+I built a completely separate subaccount model. Which meant that every model that needed to attach to either a patient or a subaccount had to carry both fields, with one always sitting there as null. Every piece of logic had to stop and ask which one it was dealing with before it could do anything useful. It was the kind of thing that starts as a small annoyance and slowly becomes a tax on every single thing you build afterward.
+
+Sometime ago I finally fixed it. I removed the subaccount model entirely and just made subaccounts patient accounts with an is_subaccount flag. That one change made upgrading at 18 trivial, made attaching records clean, made everything simpler. The only reason it was not a disaster to fix was that real patients had barely used the feature yet, so the migration was manageable.
+
+Earlier would have been better. But later would have been worse. So.
+
+## Payments
+
+Patients subscribe to extra services through Paystack, monthly or yearly. At this point I have wired up enough payment flows to know that they deserve a lot of respect. Everything has to be atomic. Webhooks can arrive more than once and your system has to handle that gracefully without processing the same event twice. Error handling has to be airtight because a payment that fails silently is a very bad time for everyone.
+
+I set up proper logging and monitoring alongside this, which leads into the next story.
+
+## The query problem I could not fully solve
+
+At some point the server just became slow. Not a little slow. Queries were taking up to five minutes. I had no idea why.
+
+I spent days on it. I redeployed the backend to the same region as the Supabase PostgreSQL database thinking it might be a latency thing. Same result. I searched for anyone who had seen something similar. Nothing useful came up. I never actually found the root cause.
+
+What I did find was a decision point. The slowness was blocking real work and I could not keep waiting for an answer that was not showing up. I moved the database to Neon. The slowness disappeared. And as a bonus, Neon's branching feature was something I had wanted anyway for cleaner dev and staging workflows, so it worked out.
+
+The other thing that came out of this whole episode was Sentry. I set it up while I was in the middle of debugging and it completely changed how I think about running a live system. Having actual visibility into what is happening rather than guessing from logs is not a nice-to-have on something like this. It is just necessary.
+
+## The architectural scars
+
+There is a structural decision I made early in this project that I have not fully recovered from yet.
+
+At some point I noticed that a lot of my views were crossing domain boundaries and spanning multiple user roles at the same time. I could not duplicate them cleanly and I could not find a good home for them either. When I sat with that problem long enough, I realized it was not a view problem. It was an architecture problem. The way I had set up the application made this outcome almost inevitable.
+
+The scars of that are still sitting in the codebase. I know exactly where they are. I plan to clean them out. But that was the moment things shifted for me. I stopped thinking primarily about features and started thinking about systems. Who owns this data? How does this domain talk to that one? What happens when two different roles need to do almost the same thing but not quite?
+
+This project is the reason I started thinking that way. That is worth something.
+
+## Where it is going
+
+The HIN is the long game. Right now we are onboarding hospitals, getting patients into the system, and making sure the foundation is solid. The real vision, records that follow a patient from one institution to another anywhere in the country, is what all of this is building toward.
+
+We are still shipping constantly. New features, fixes, refinements. The kind of work that does not have a clean end date.

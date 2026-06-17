@@ -4,7 +4,6 @@ import { ArrowUpRight, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { site } from "@/data/site";
 import { Star1 } from "iconsax-reactjs";
-import ceejay from "../../assets/Ceejay-nobg.png";
 import HeroFlipCard from "./HeroFlipCard";
 
 export function Hero() {
@@ -27,7 +26,7 @@ export function Hero() {
           <p className="mt-6 max-w-xl text-lg text-muted-foreground leading-relaxed">
             I'm <span className="text-foreground">{site.short}</span> — a
             fullstack engineer obsessed with reliable backends, clean
-            architecture, AI systems that earn their keep and stunning UI{" "}
+            architecture, AI systems that earn their keep, and stunning UI{" "}
             <Star1
               className="inline-block h-4 w-4 align-middle mb-1"
               variant="Bulk"

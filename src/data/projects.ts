@@ -1,4 +1,5 @@
-import futaverse_img from "../assets/projects/futaverse_architecture.png";
+import futaverse_img from "@/assets/projects/futaverse_architecture.png";
+import docuhealth_img from "@/assets/projects/docuhealth.png";
 
 export type Project = {
   slug: string;
@@ -14,7 +15,6 @@ export type Project = {
   decisions?: { title: string; body: string }[];
   features?: string[];
   metrics?: { label: string; value: string }[];
-  gallery: string[];
   architecture?: string;
   hasArticle?: boolean;
   image?: string;
@@ -47,58 +47,35 @@ export const projects: Project[] = [
       github: "https://github.com/futaverse/futaverse-backend",
       live: "https://futaverse-backend-3.onrender.com",
     },
-    gallery: [],
     image: futaverse_img,
   },
 
   {
     slug: "docuhealth",
     title: "DocuHealth",
-    tagline: "Patient records, reimagined for African clinics.",
+    hasArticle: true,
+    tagline: "Building interoperable healthcare records for Nigeria.",
     description:
-      "HIPAA-grade EMR with offline-first capture, structured clinical notes, and AI-assisted summarization for over-stretched clinicians.",
-    role: "Backend Engineer",
-    timeline: "2023 — 2024",
-    stack: ["FastAPI", "PostgreSQL", "Pinecone", "OpenAI", "React"],
+      "A healthcare platform designed to connect patients, hospitals, laboratories, pharmacies, and clinics through a unified Health Identification Number (HIN), enabling secure and interoperable medical records.",
+    role: "Lead Backend Engineer",
+    timeline: "2024 — Present",
+    stack: [
+      "Django",
+      "DRF",
+      "PostgreSQL",
+      "Supabase",
+      "Paystack",
+      "JWT",
+      "Sentry",
+    ],
     achievement:
-      "Reduced clinician documentation time by 41% across pilot clinics.",
-    links: { github: "#", live: "#" },
-    challenges: [
-      {
-        title: "Offline-first sync",
-        body: "Designed a conflict-free replicated journal so devices stay productive on flaky networks.",
-      },
-      {
-        title: "PII safety",
-        body: "Field-level encryption with deterministic search indexes for vitals and identifiers.",
-      },
-    ],
-    decisions: [
-      {
-        title: "RAG over local corpus",
-        body: "Each clinic gets its own Pinecone namespace — patient context never crosses tenants.",
-      },
-      {
-        title: "Event-sourced records",
-        body: "Audit trail by construction; rollbacks are just replays.",
-      },
-    ],
-    features: [
-      "Offline capture",
-      "Vitals charts",
-      "AI summaries",
-      "Role-based access",
-      "Audit log",
-    ],
-    metrics: [
-      { label: "Clinics", value: "12" },
-      { label: "Docs time", value: "-41%" },
-      { label: "Sync conflicts", value: "<0.2%" },
-    ],
-    gallery: [],
-    architecture:
-      "React PWA with IndexedDB queue, FastAPI gateway, PostgreSQL with row-level security, Pinecone for retrieval, OpenAI for summarization.",
+      "Led backend development of a healthcare platform currently serving multiple hospitals and hundreds of patients.",
+    links: {
+      live: "https://docuhealthservices.net/",
+    },
+    image: docuhealth_img,
   },
+
   {
     slug: "splitpay",
     title: "Splitpay",
@@ -141,7 +118,7 @@ export const projects: Project[] = [
       { label: "Success rate", value: "99.7%" },
       { label: "Disputes", value: "0.03%" },
     ],
-    gallery: [],
+    // gallery: [],
     architecture:
       "Django services, Celery workers, Postgres ledger, Redis queues, Paystack + bank rails behind an adapter layer.",
   },
@@ -188,7 +165,7 @@ export const projects: Project[] = [
       { label: "Agreement", value: "94%" },
       { label: "Median grade time", value: "3.8s" },
     ],
-    gallery: [],
+    // gallery: [],
     architecture:
       "Next.js client, FastAPI grader, Pinecone retrieval, Gemini for reasoning, Postgres of record.",
   },
@@ -229,7 +206,7 @@ export const projects: Project[] = [
       { label: "Modules", value: "9" },
       { label: "Downtime", value: "0m" },
     ],
-    gallery: [],
+    // gallery: [],
     architecture:
       "Django modular monolith, schema-per-tenant Postgres, Celery + Redis, Dockerized deploys with blue/green migrations.",
   },
