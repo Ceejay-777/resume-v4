@@ -1,0 +1,83 @@
+## The backdrop
+
+Some projects you join knowing roughly what you are getting into. This was not one of them.
+
+Fowgate had an existing suite of business tools covering HR, payroll, real estate management, and more. The goal was to throw all of that out and rebuild it as one modern platform with a better UI, a cleaner stack, and AI baked in throughout. I joined at the very beginning as the sole backend developer on a team of four: myself, two frontend developers, and a UI designer.
+
+The scope was massive. The HR module alone took months of full time work. And unlike some large systems where the different parts stay mostly in their own lanes, this one had moving pieces everywhere. I could not afford to think about just one corner of it at a time.
+
+I later took on the technical lead role, coordinating work across the whole team with the designer acting as PM. Five people, a lot of ground to cover, and a product that had not been built before.
+
+Due to an NDA and the fact that the product has not been released publicly yet, I will keep certain details vague. But there is still plenty worth talking about.
+
+## The tooling mistake
+
+I chose Flask and MongoDB.
+
+At the time it felt like a reasonable call. The architecture was modular, Flask felt like a natural fit for that, and MongoDB gave me flexibility on the data side. What I did not fully account for was how much overhead I was signing up for.
+
+As the project grew, the cracks showed. Documentation had to be managed manually. Query patterns had to be written from scratch every time. Business logic kept getting repeated across different parts of the codebase. Every new module meant fighting the same battles again with slightly different variables.
+
+The way I dug myself out was by building a base class for my database models that abstracted about ninety percent of my query needs. It worked. But the fact that I had to build it at all was a sign that I had chosen tools that were making me do work the framework should have been doing for me. A structured database and a more opinionated framework would have saved me a significant amount of that pain.
+
+I know that now. I did not know it then. That is how it goes sometimes.
+
+## Building things I had never built before
+
+If there is one thing this project taught me above everything else, it is that unfamiliar territory is not a reason to hesitate.
+
+I had never built an OAuth2 flow before. I researched it, implemented it, integrated Google sign-in, managed credentials, set up the Google console. It works.
+
+I had never built a RAG pipeline before. I researched it, figured out the pieces, and built it. It works.
+
+I had never built an AI interviewer before. I built one that sets questions for candidates and scores their responses automatically. It works.
+
+I had never built a map annotation system for real estate before. Sellers can upload an estate plan, and the system lets them manage each individual plot, track who bought what and when, all from a visual interface. It works.
+
+The pattern is not that I knew how to do these things. The pattern is that not knowing how was never a reason not to try.
+
+## The RAG assistant
+
+This one deserves its own section because it took the most wrangling to get right.
+
+The goal was a chat assistant that could answer questions based on a specific company document, the PIA. The architecture is not complicated in hindsight:
+
+```
+PIA Document → Chunking → Embeddings → Pinecone → Similarity Search → Gemini
+```
+
+Getting there was a different story. I first tried to chunk the document by paragraphs, which would have been the cleaner approach. I could not get my hands on the `.docx` version of the file, so paragraph chunking was off the table. I ended up chunking by page instead, embedded each chunk, and stored the embeddings in Pinecone.
+
+When a user sends a query, the query gets embedded, compared against the stored embeddings, and the top five most relevant chunks get passed to Gemini Flash 2.5 alongside the original question. Gemini generates a response grounded in that context.
+
+Simple pipeline. Not a simple journey to get it working. But it works, and that is what matters.
+
+## Learning what leadership actually means
+
+At some point the CTO started praising me in meetings. Not for my endpoints or my database design, but for things like simplifying a product flow, catching something in the UI that would confuse users, or pushing back on a feature that was adding complexity without adding value.
+
+That was a signal I paid attention to and have held close to my chest.
+
+Technical leadership is not just writing good code. It is understanding the product well enough to have opinions about it that go beyond your own lane. It is being the person in the room who can translate between what the business wants, what the users need, and what the engineers can actually build.
+
+I did not walk into this project knowing how to do that. I figured it out as the project demanded it.
+
+## What I would change
+
+A lot, honestly.
+
+PostgreSQL instead of MongoDB. The relational structure of enterprise data makes a document database the wrong choice here regardless of how flexible it feels upfront.
+
+A more opinionated framework. The overhead of Flask at this scale was real and unnecessary. Something that handles more of the boilerplate would have let me focus on the actual product.
+
+More deliberate architecture from day one. The technical debt accumulated not because I was careless but because I was inexperienced. The difference between those two things is important, but the result looks the same in the codebase.
+
+## What it gave me
+
+This project is the one that made me feel like an actual engineer.
+
+Not because it was the most technically sophisticated thing I have built. But because I walked into it not knowing how to do most of what it required, and I delivered anyway. OAuth, RAG pipelines, AI integrations, real estate mapping, enterprise HR systems, technical leadership. None of that was in my skillset when I started. All of it was by the time the project paused.
+
+The project is currently on hold due to some reasons. I expect it to resume soon. When it does, I already have a list of things to fix.
+
+I have a soft spot for this one.

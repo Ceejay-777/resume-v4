@@ -34,6 +34,29 @@ My implementation of it was not straightforward at all.
 
 I built a completely separate subaccount model. Which meant that every model that needed to attach to either a patient or a subaccount had to carry both fields, with one always sitting there as null. Every piece of logic had to stop and ask which one it was dealing with before it could do anything useful. It was the kind of thing that starts as a small annoyance and slowly becomes a tax on every single thing you build afterward.
 
+```python
+# records/models.py — the old MedicalRecord model
+
+class MedicalRecord(models.Model):
+    # Two separate fields, one always null
+    patient    = models.ForeignKey(PatientProfile,   on_delete=models.SET_NULL, null=True, blank=True)
+    subaccount = models.ForeignKey(SubaccountProfile, on_delete=models.SET_NULL, null=True, blank=True)
+    doctor     = models.ForeignKey(HospitalStaffProfile, on_delete=models.SET_NULL, null=True)
+    hospital   = models.ForeignKey(HospitalProfile,  on_delete=models.SET_NULL, null=True)
+
+    chief_complaint = models.TextField()
+    diagnosis       = models.JSONField(default=list)
+    treatment_plan  = models.JSONField(default=list)
+
+    def clean(self):
+        # Had to write explicit validation just to enforce what
+        # the model should have made impossible in the first place
+        if not self.patient and not self.subaccount:
+            raise ValidationError("Either patient or subaccount must be set.")
+        if self.patient and self.subaccount:
+            raise ValidationError("Only one of patient or subaccount can be set.")
+```
+
 Sometime ago I finally fixed it. I removed the subaccount model entirely and just made subaccounts patient accounts with an is_subaccount flag. That one change made upgrading at 18 trivial, made attaching records clean, made everything simpler. The only reason it was not a disaster to fix was that real patients had barely used the feature yet, so the migration was manageable.
 
 Earlier would have been better. But later would have been worse. So.
@@ -41,6 +64,77 @@ Earlier would have been better. But later would have been worse. So.
 ## Payments
 
 Patients subscribe to extra services through Paystack, monthly or yearly. At this point I have wired up enough payment flows to know that they deserve a lot of respect. Everything has to be atomic. Webhooks can arrive more than once and your system has to handle that gracefully without processing the same event twice. Error handling has to be airtight because a payment that fails silently is a very bad time for everyone.
+
+```python
+# payments/webhook_handlers.py
+
+def handle_subscription_create(data):
+    sentry_logger.info("Creating subscription", extra={"data": data})
+    try:
+        with transaction.atomic():
+            paystack_cus_code = data.get("customer", {}).get("customer_code")
+            user = User.objects.get(paystack_cus_code=paystack_cus_code)
+            subscription = Subscription.objects.get(user=user)
+
+            old_sub_code = subscription.paystack_subscription_code
+            new_plan_code = data.get("plan", {}).get("plan_code")
+
+            subscription.plan   = SubscriptionPlan.objects.get(paystack_plan_code=new_plan_code)
+            subscription.status = Subscription.SubscriptionStatus.ACTIVE
+            subscription.paystack_subscription_code = data.get("subscription_code")
+            subscription.next_payment_date = parse_datetime(data.get("next_payment_date"))
+            subscription.save(update_fields=[
+                'status', 'paystack_subscription_code',
+                'next_payment_date', 'plan'
+            ])
+
+        # Deactivation happens outside the atomic block intentionally —
+        # we only cancel the old subscription after the new one is confirmed saved
+        if old_sub_code and old_sub_code != subscription.paystack_subscription_code:
+            deactivate_paystack_subscription(old_sub_code)
+
+    except (User.DoesNotExist, Subscription.DoesNotExist):
+        sentry_logger.error(
+            f"Subscription creation failed: record not found for {paystack_cus_code}",
+            exc_info=True
+        )
+    except Exception:
+        sentry_logger.error("Subscription creation failed", exc_info=True)
+
+
+def handle_charge_success(data):
+    try:
+        with transaction.atomic():
+            paystack_cus_code = data.get("customer", {}).get("customer_code")
+            user = User.objects.get(paystack_cus_code=paystack_cus_code)
+
+            # select_for_update locks the row so concurrent webhooks
+            # for the same user cannot process simultaneously
+            subscription = Subscription.objects.select_for_update().get(user=user)
+
+            subscription.status            = Subscription.SubscriptionStatus.ACTIVE
+            subscription.last_payment_date = parse_datetime(data.get("paid_at"))
+            subscription.save(update_fields=['status', 'last_payment_date'])
+
+            # update_or_create makes this safe to run twice on the same reference
+            Transaction.objects.update_or_create(
+                reference=data.get("reference"),
+                user=user,
+                defaults={
+                    "amount":     data.get("amount") / 100,
+                    "status":     Transaction.Status.SUCCESS,
+                    "created_at": parse_datetime(data.get("paid_at")),
+                }
+            )
+
+    except (User.DoesNotExist, Subscription.DoesNotExist):
+        sentry_logger.error(
+            f"Charge success failed: record not found for {paystack_cus_code}",
+            exc_info=True
+        )
+    except Exception:
+        sentry_logger.error("Charge success failed", exc_info=True)
+```
 
 I set up proper logging and monitoring alongside this, which leads into the next story.
 

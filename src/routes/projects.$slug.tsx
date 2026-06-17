@@ -46,7 +46,17 @@ function ProjectDetail() {
   const idx = projects.findIndex((x) => x.slug === project.slug);
   const next = projects[(idx + 1) % projects.length];
 
-  console.log("PROJECT DETAIL");
+  // document.querySelectorAll("*").forEach((el) => {
+  //   if (el.scrollWidth > document.documentElement.clientWidth) {
+  //     console.log(
+  //       el,
+  //       "scrollWidth:",
+  //       el.scrollWidth,
+  //       "clientWidth:",
+  //       el.clientWidth,
+  //     );
+  //   }
+  // });
 
   return (
     <article className="py-12">
@@ -147,7 +157,7 @@ function ProjectDetail() {
             )}
           </aside>
 
-          <div className="space-y-14 max-w-2xl">
+          <div className="space-y-14 max-w-2xl w-full">
             {project.hasArticle ? (
               // Long-form article from MDX
               <ArticleContent slug={project.slug} />

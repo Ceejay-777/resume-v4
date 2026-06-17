@@ -41,14 +41,24 @@ const mdxComponents = {
       {...props}
     />
   ),
+  figure: (props: React.HTMLAttributes<HTMLElement>) => (
+    <figure
+      className="my-6 max-w-full w-full flex-0 overflow-x-auto rounded-lg border-amber-400"
+      {...props}
+      style={{ maxWidth: "100%", overflowX: "auto" }}
+    />
+  ),
   pre: (props: React.HTMLAttributes<HTMLPreElement>) => (
     <pre
-      className="my-6 overflow-x-auto rounded-lg border border-border bg-surface p-4 text-sm"
+      className="rounded-lg border border-border bg-surface p-4 text-xs sm:text-sm"
       {...props}
     />
   ),
   code: (props: React.HTMLAttributes<HTMLElement>) => (
-    <code className="font-mono text-sm" {...props} />
+    <code
+      className="font-mono text-xs sm:text-sm rounded-lg max-w-full border-green-600"
+      {...props}
+    />
   ),
 };
 

@@ -22,6 +22,55 @@ export type Project = {
 
 export const projects: Project[] = [
   {
+    slug: "docuhealth",
+    title: "DocuHealth",
+    hasArticle: true,
+    tagline: "Building interoperable healthcare records for Nigeria.",
+    description:
+      "A healthcare platform designed to connect patients, hospitals, laboratories, pharmacies, and clinics through a unified Health Identification Number (HIN), enabling secure and interoperable medical records.",
+    role: "Lead Backend Engineer",
+    timeline: "2024 — Present",
+    stack: [
+      "Django",
+      "DRF",
+      "PostgreSQL",
+      "Supabase",
+      "Paystack",
+      "JWT",
+      "Sentry",
+    ],
+    achievement:
+      "Led backend development of a healthcare platform currently serving multiple hospitals and hundreds of patients.",
+    links: {
+      live: "https://docuhealthservices.net/",
+    },
+    image: docuhealth_img,
+  },
+
+  {
+    slug: "fowgate",
+    title: "Fowgate ERP",
+    hasArticle: true,
+    tagline: "Enterprise resource planning, rebuilt from the ground up.",
+    description:
+      "A full-scale ERP platform for enterprises across oil and gas, tech, law, and real estate. Covers HR, payroll, real estate management, AI integrations, and more. Built by a four-person team with me as the sole backend developer and later technical lead.",
+    role: "Lead Backend Engineer",
+    timeline: "2025 - 2026",
+    stack: [
+      "Flask",
+      "MongoDB",
+      "Flask-RESTX",
+      "Gemini",
+      "Pinecone",
+      "OAuth2",
+      "Google APIs",
+    ],
+    achievement:
+      "Sole backend developer on an enterprise ERP suite spanning HR, payroll, real estate, and AI itegration and more. Later promoted to technical lead coordinating a five-person team.",
+    links: { live: "https://fowgate.com/" },
+  },
+
+  {
     slug: "futaverse",
     hasArticle: true,
     title: "FutaVerse",
@@ -48,32 +97,6 @@ export const projects: Project[] = [
       live: "https://futaverse-backend-3.onrender.com",
     },
     image: futaverse_img,
-  },
-
-  {
-    slug: "docuhealth",
-    title: "DocuHealth",
-    hasArticle: true,
-    tagline: "Building interoperable healthcare records for Nigeria.",
-    description:
-      "A healthcare platform designed to connect patients, hospitals, laboratories, pharmacies, and clinics through a unified Health Identification Number (HIN), enabling secure and interoperable medical records.",
-    role: "Lead Backend Engineer",
-    timeline: "2024 — Present",
-    stack: [
-      "Django",
-      "DRF",
-      "PostgreSQL",
-      "Supabase",
-      "Paystack",
-      "JWT",
-      "Sentry",
-    ],
-    achievement:
-      "Led backend development of a healthcare platform currently serving multiple hospitals and hundreds of patients.",
-    links: {
-      live: "https://docuhealthservices.net/",
-    },
-    image: docuhealth_img,
   },
 
   {
@@ -168,47 +191,6 @@ export const projects: Project[] = [
     // gallery: [],
     architecture:
       "Next.js client, FastAPI grader, Pinecone retrieval, Gemini for reasoning, Postgres of record.",
-  },
-  {
-    slug: "erp-system",
-    title: "Enterprise ERP",
-    tagline: "An ERP that doesn't fight its users.",
-    description:
-      "Multi-tenant ERP covering inventory, HR, finance, and procurement — built modularly so each org turns on what they need.",
-    role: "Engineering Lead",
-    timeline: "2022 — 2024",
-    stack: ["Django", "DRF", "PostgreSQL", "Redis", "Docker", "RBAC"],
-    achievement:
-      "Onboarded 5 enterprise tenants with zero downtime migrations.",
-    challenges: [
-      {
-        title: "Multi-tenancy",
-        body: "Schema-per-tenant with a shared identity plane and per-tenant migrations.",
-      },
-      {
-        title: "Permission depth",
-        body: "Fine-grained RBAC down to field-level visibility for finance modules.",
-      },
-    ],
-    decisions: [
-      {
-        title: "Modular monolith",
-        body: "Right-sized for the team — clean module boundaries today, services when load demands.",
-      },
-      {
-        title: "Background-first writes",
-        body: "Heavy writes go through Celery so the UI is always responsive.",
-      },
-    ],
-    features: ["Inventory", "Payroll", "Procurement", "Approvals", "Reporting"],
-    metrics: [
-      { label: "Tenants", value: "5" },
-      { label: "Modules", value: "9" },
-      { label: "Downtime", value: "0m" },
-    ],
-    // gallery: [],
-    architecture:
-      "Django modular monolith, schema-per-tenant Postgres, Celery + Redis, Dockerized deploys with blue/green migrations.",
   },
 ];
 
